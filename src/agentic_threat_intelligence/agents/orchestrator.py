@@ -11,9 +11,16 @@ from agentic_threat_intelligence.agents.base import (
 from agentic_threat_intelligence.agents.message_intelligence import (
     MessageIntelligenceTask,
 )
+from agentic_threat_intelligence.agents.threat_intelligence import (
+    ThreatIntelligenceTask,
+)
 from agentic_threat_intelligence.communication.contracts import AgentResult
 from agentic_threat_intelligence.workflows.message_intelligence import (
     MessageIntelligenceWorkflow,
+)
+from agentic_threat_intelligence.workflows.triage import (
+    TriageWorkflow,
+    TriageWorkflowResult,
 )
 
 
@@ -24,32 +31,25 @@ class PlannedInvocation:
 
 
 class TriageOrchestrator:
-    """Public orchestration facade.
-
-    LangGraph is an implementation detail behind workflow objects. The
-    orchestrator remains the stable application-facing API so the security,
-    API, and cloud deployment layers do not depend directly on LangGraph.
-    """
+    """Stable application facade over LangGraph workflows."""
 
     def __init__(
         self,
         *,
         message_intelligence_workflow: MessageIntelligenceWorkflow | None = None,
+        triage_workflow: TriageWorkflow | None = None,
     ) -> None:
         self._message_intelligence_workflow = (
             message_intelligence_workflow
         )
+        self._triage_workflow = triage_workflow
 
     async def execute_parallel(
         self,
         invocations: Iterable[PlannedInvocation],
         context: AgentContext,
     ) -> list[Any]:
-        """Compatibility path for independent specialist invocations.
-
-        This remains useful for tests and simple fan-out. Stateful production
-        triage flows should be expressed as LangGraph workflows.
-        """
+        """Compatibility path for simple independent specialist fan-out."""
 
         return list(
             await asyncio.gather(
@@ -66,7 +66,7 @@ class TriageOrchestrator:
         task: MessageIntelligenceTask,
         context: AgentContext,
     ) -> AgentResult:
-        """Execute Message Intelligence through the LangGraph workflow."""
+        """Execute the Foundation 2 Message Intelligence workflow."""
 
         if self._message_intelligence_workflow is None:
             raise RuntimeError(
@@ -75,5 +75,23 @@ class TriageOrchestrator:
 
         return await self._message_intelligence_workflow.run(
             task=task,
+            context=context,
+        )
+
+    async def analyze_case(
+        self,
+        *,
+        message_task: MessageIntelligenceTask,
+        threat_task: ThreatIntelligenceTask,
+        context: AgentContext,
+    ) -> TriageWorkflowResult:
+        """Execute the multi-specialist LangGraph triage workflow."""
+
+        if self._triage_workflow is None:
+            raise RuntimeError("Triage workflow is not configured")
+
+        return await self._triage_workflow.run(
+            message_task=message_task,
+            threat_task=threat_task,
             context=context,
         )

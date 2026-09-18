@@ -5,8 +5,9 @@
 2. **Message Intelligence + LangGraph orchestration** — first specialized
    agent, secure prompt boundary, typed result parsing, TriageOrchestrator
    facade, LangGraph workflow.
-3. **Threat Intelligence Agent + MCP** — authorized MCP tools, caching,
-   provider limits, provenance, and parallel graph execution.
+3. **Threat Intelligence + secured MCP** — dedicated workload identity,
+   deny-by-default read-only tool authorization, validated provider results,
+   security audit, parallel LangGraph fan-out.
 4. **Risk/Triage + Explainability** — evidence synthesis, conflict handling,
    conditional graph routing, and post-decision explanation.
 5. **Policy/Response + deterministic enforcement + HITL** — response
